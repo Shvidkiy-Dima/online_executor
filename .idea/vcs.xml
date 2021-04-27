@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$/m_app/monaco-languageclient" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/m_app/python-language-server" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/python-language-server" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/test_app" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/test_app/gt/monaco-languageclient" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/test_app/jsonrpc-ws-proxy" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/test_app/monaco-react" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/test_app/react-monaco-editor" vcs="Git" />
+  </component>
+</project>

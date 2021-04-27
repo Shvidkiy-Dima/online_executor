@@ -1,0 +1,5 @@
+langservers:
+  python:
+    - /bin/bash
+    - ./start_proxy.sh
+    - --stdio
