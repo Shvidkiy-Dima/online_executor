@@ -35,3 +35,4 @@ class ConfirmationEmail(BaseModel):
     status = models.PositiveSmallIntegerField(choices=Status.choices, default=Status.NEW)
 
     objects = ConfirmationEmailQuerySet.as_manager()
+

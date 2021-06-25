@@ -6,4 +6,4 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('email',)
+        fields = ('email', 'packages_size')

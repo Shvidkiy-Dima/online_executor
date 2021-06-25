@@ -1,5 +1,5 @@
 from django.db import models, transaction
-from django.db.models import F
+from django.db.models import F, Sum
 from django.contrib.auth.models import AbstractUser, UserManager as BaseUserManager
 from uuid import uuid4
 
@@ -34,3 +34,8 @@ class User(AbstractUser):
 
     def __str__(self):
         return f'user_{self.id}'
+
+    @property
+    def packages_size(self):
+        size = self.packages.aggregate(common_size=Sum('size'))['common_size'] or 0
+        return size // 1024

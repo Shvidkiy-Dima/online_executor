@@ -1,47 +1,25 @@
-import React from "react";
-import Tree from '../tree/tree'
-import Editor from '../editor/editor'
-import { Link, useParams } from "react-router-dom";
-import request from '../../utils/request'
+import React from 'react'
+import { Card } from 'antd';
+import {
+    HashRouter as Router,
+    Switch,
+    Link,
+    Route,
+    Redirect,
+  } from "react-router-dom"
+  
 
+export default ({project}) =>{
 
-export default ()=> {
-  const [Project, SetProject] = React.useState(null);
-  const [TreeStruct, SetTreeStruct] = React.useState(null)
-  let { projectId } = useParams();
+    return (
 
-  function GetProject() {
-    request({ method: "get", url: `api/dashboard/project/${projectId}/` }, (res) => {
-      SetProject(res.data);
-      let struct = []
-      let modules = res.data.modules
-      let folders = res.data.folders
-      for (let i of folders){
-          struct.push({type: 'folder', name: i.name, 
-          childrens: i.modules.map((m)=>{
-              return {type: 'file', name: m.name, id: m.id}
-          })
-            })
-      } 
-      for (let m of modules){
-            struct.push({type:'file', name: m.name, id: m.id})
-      }
-      SetTreeStruct(struct)
+        <div>
+            <Link to={`/dashboard/project/${project.id}`}>
+            <Card bordered={true} style={{ width: 300 }}>
+                <h2>{project.name}</h2>
+            </Card>
+            </Link>
+        </div>
+    )
 
-    });
-  }
-
-React.useEffect(GetProject, [])
-
-if (Project === null | TreeStruct === null){
-    return null
-}
-
-let InitiaModule = Project.modules[Project.modules.length-1]
-  return (
-    <div style={{display: 'flex'}}>
-      <Tree data={TreeStruct} />
-    <Editor initialText={InitiaModule.code}/> 
-    </div>
-  );
 }

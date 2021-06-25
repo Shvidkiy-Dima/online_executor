@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/m_app/monaco-languageclient" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/m_app/python-language-server" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/python-language-server" vcs="Git" />

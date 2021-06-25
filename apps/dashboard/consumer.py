@@ -38,9 +38,33 @@ class ModuleConsumer(AsyncJsonWebsocketConsumer):
 
     @database_sync_to_async
     def _add_to_module(self, code):
-        self.module.code = code.encode()
+        self.module.code = code.encode('utf8')
         self.module.save(update_fields=['code'])
 
     @database_sync_to_async
     def _get_module(self, user, module_id):
         return Module.objects.filter(project__author=user, id=module_id).first()
+
+
+class CommonConsumer(AsyncJsonWebsocketConsumer):
+
+    def __init__(self, *args, **kwargs):
+        self.group_name = None
+        super().__init__(*args, **kwargs)
+
+    async def connect(self):
+        user = self.scope.get('user')
+        if not user or not user.is_authenticated:
+            await self.close()
+            return
+
+        self.group_name = str(user)
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        await self.accept()
+
+    async def disconnect(self, code):
+        if self.group_name is not None:
+            await self.channel_layer.group_discard(self.group_name, self.channel_name)
+
+    async def send_package(self, event):
+        await self.send_json({"method": 'add_package', 'data': event['data']})

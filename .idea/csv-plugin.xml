@@ -17,7 +17,21 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="/project/settings/base.py">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="/python-language-server/pyls/__main__.py">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/run_language_serv.sh">
           <value>
             <Attribute>
               <option name="separator" value="," />

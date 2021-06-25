@@ -36,10 +36,7 @@ export default function LoginForm({ auth, login }) {
   console.log(error)
   return (
     <div style={{ height: "100%", overflow: "hidden" }}>
-      <Row justify="center" align="space-between" wrap={false}>
-        <Col xs={0} sm={0} md={0} lg={6} xl={8}>
-          <img src="http://localhost:8000/left.jpg" />
-        </Col>
+      <Row justify="center">
         <Col>
           <Card
             title="Sing in to your account"
@@ -100,39 +97,6 @@ export default function LoginForm({ auth, login }) {
               {error.map((e, i)=><Alert message={e} type="error" key={i} />)}
             </Form>
           </Card>
-        </Col>
-        <Col
-          style={{ border: "4px double black" }}
-          xs={0}
-          sm={0}
-          md={0}
-          lg={0}
-          xl={8}
-        >
-          <Row justify="center" style={{ height: "100%" }}>
-            <Col>
-              <Card
-                title="Default size card"
-                headStyle={{
-                  textAlign: "center",
-                  fontSize: "2em",
-                  fontFamily: "Nunito",
-                }}
-                bordered={false}
-                style={{ marginTop: "30%", width: "80%", textAlign: 'center' }}
-              >
-                <p>
-                  Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed
-                </p>
-                <p>
-                Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed
-                </p>
-                <p>
-                Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed
-                </p>
-              </Card>
-            </Col>
-          </Row>
         </Col>
       </Row>
     </div>

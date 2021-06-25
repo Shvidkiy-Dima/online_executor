@@ -19,6 +19,8 @@ APPS_DIR = BASE_DIR / 'apps'
 VENVS_DIR = BASE_DIR / 'user_venvs'
 VENVS_USER_DIR = VENVS_DIR / 'users'
 BASE_VENV = VENVS_DIR / 'base/venv'
+RES_PACKAGE = BASE_DIR / 'services/call_me'
+RUN_BASE_URL = 'http://localhost:8000/run/'
 
 sys.path.insert(0, str(APPS_DIR))
 sys.path.insert(0, str(BASE_DIR))
@@ -132,6 +134,15 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
 STATIC_URL = '/static/'
+# STATIC_ROOT = BASE_DIR / 'static'
+STATICFILES_FINDERS = (
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+)
+
+STATICFILES_DIRS = [
+    BASE_DIR / "static"
+]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
@@ -149,3 +160,30 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     ),
 }
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
+
+CELERY_BROKER_URL = 'redis://localhost:6379/1'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/1'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+USE_CELERY = False
+
+# PRE_INSTALLED_PACKAGES = [
+#     'beautifulsoup4',
+#     'numpy',
+#     'pandas',
+#     'pandas',
+#     'requests',
+#     'lxml',
+# ]
+
+MAX_PCG_STORAGE = 250 # MB

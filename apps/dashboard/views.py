@@ -1,10 +1,13 @@
+import json
 from rest_framework import generics, permissions
+from django.http.response import HttpResponse
 from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError
 from dashboard import models
 from dashboard import serializers
-from utils.sandbox import SandBox, Volume
-from utils.functions import get_dir_size
-import epicbox
+from utils.sandbox import PackageAddSandBox, ModuleRunSandBox, \
+    PackageRemoveSandBox, ModuleRunAPISandBox
+from utils.views import SerializerMapMixin
 
 
 class ProjectView(generics.ListCreateAPIView):
@@ -29,51 +32,75 @@ class ModuleCreateView(generics.CreateAPIView):
     serializer_class = serializers.ModuleCreateSerializer
 
 
-class StartModuleView(generics.GenericAPIView):
+class ModuleDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = serializers.ModuleDetailSerializer
+
+    def get_queryset(self):
+        return models.Module.objects.filter(project__author=self.request.user)
+
+    def perform_destroy(self, instance):
+        if instance.project.modules.count() == 1:
+            raise ValidationError('Project must have at least one module')
+
+        return super().perform_destroy(instance)
+
+
+class ModuleRunView(generics.GenericAPIView):
     queryset = models.Module.objects.all()
+
+    def get_queryset(self):
+        return models.Module.objects.filter(project__author=self.request.user)
 
     def post(self, request, *args, **kwargs):
         module = self.get_object()
         user = request.user
-        epicbox.configure(
-            profiles=[
-                epicbox.Profile('python', 'python:3.8-alpine')
-            ]
-        )
-
-        files = [{'name': 'main.py', 'content': module.code}]
-        limits = {'cputime': 1, 'memory': 64, 'realtime': 5}
-
-        workdir = '/sandbox'
-        volume = Volume(user.venv_path, f'{workdir}/venv', 'ro')
-        sandbox = SandBox(volume=volume, workdir=workdir)
-        result = sandbox.run('python', f'{workdir}/venv/bin/python3 main.py', files=files, limits=limits)
-
+        result = ModuleRunSandBox(module, user).run()
         return Response(result)
 
 
-# class AddModule(generics.CreateAPIView):
-#
-#     def create(self, request, *args, **kwargs):
-#         user = request.user
-#         cur_size = get_dir_size(user.venv_path)
-#         if cur_size > 250 * 1024:
-#             raise RuntimeError
-#
-#         workdir = '/sandbox'
-#         volume = Volume(user.venv_path, f'{workdir}/venv', 'rw')
-#         sandbox = SandBox(volume=volume, workdir=workdir)
-#         limits = {'cputime': 1, 'memory': 64, 'realtime': 5}
-#
-#         b"""
-#         import pip
-#         pip.main(['download', package])
-#
-#
-#         """
-#
-#         files = [{'name': 'main.py', 'content': ''}]
-#         result = sandbox.run('python', f'{workdir}/venv/bin/pip main.py',
-#                              files=files, limits=limits)
+class ModuleRunApiView(generics.GenericAPIView):
+    queryset = models.Module.objects.all()
 
+    def get_queryset(self):
+        return models.Module.objects.filter(project__author=self.request.user)
+
+    def post(self, request, *args, **kwargs):
+        module = self.get_object()
+        user = request.user
+        result = ModuleRunAPISandBox(module, user).run()
+        return self.get_response(result)
+
+    def get_response(self, result):
+        if result['exit_code'] == 0:
+            data = json.loads(result['stdout'].decode('utf8'))
+            response_class = Response if data['type'] == 'json' else HttpResponse
+            body = json.loads(data['body']) if data['type'] == 'json' else data['body']
+            response = response_class(data=body, status=data['status_code'])
+        else:
+            body = {'error': result['stderr'].decode('utf8')}
+            response = Response(body, status=404)
+        return response
+
+
+class PackageView(SerializerMapMixin, generics.ListCreateAPIView):
+    serializer_map = {'post': serializers.PackageCreateSerializer,
+                      'get': serializers.PackageSerializer
+                      }
+
+    def get_queryset(self):
+        return self.request.user.packages.all()
+
+
+class PackageDetailView(generics.DestroyAPIView):
+
+    def get_queryset(self):
+        return self.request.user.packages.all()
+
+    def perform_destroy(self, instance):
+        result = PackageRemoveSandBox(instance.name, self.request.user).run()
+        if result['exit_code'] == 0:
+            return instance.delete()
+
+        else:
+            raise ValidationError(result['stderr'].decode())
 

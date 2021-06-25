@@ -1,40 +1,34 @@
 import React from "react";
 import Projects from './projects'
-import Project from './project'
+import Project from './project_detail'
 import {
+  HashRouter as Router,
   Switch,
+  Link,
   Route,
-} from "react-router-dom";
+  Redirect,
+} from "react-router-dom"
+import WebSocketConnection from "../../utils/ws";
 
 
-const structure = [
-  {
-    type: "folder",
-    name: "src",
-    childrens: [
-      {
-        type: "folder",
-        name: "Components",
-        childrens: [
-          { type: "file", name: "Modal.js" },
-          { type: "file", name: "Modal.css" }
-        ]
-      },
-      { type: "file", name: "index.js" },
-      { type: "file", name: "index.html" }
-    ]
-  },
-  { type: "file", name: "package.json" }
-];
+const common_ws = new WebSocketConnection()
 
-export default ()=> {
+export default ({logout, user})=> {
+
+
+  function WsCommomConnect(){
+    common_ws.connect('ws/dashboard/common/')
+    return ()=> common_ws.close()
+  }
+  React.useEffect(WsCommomConnect, [])
+
   return (
     <Switch>
-    <Route path="/project/:projectId">
-      <Project/>
+    <Route path="/dashboard/project/:projectId">
+      <Project common_ws={common_ws} logout={logout} user={user} />
     </Route>
-    <Route exact path="/">
-      <Projects/>
+    <Route exact path="/dashboard">
+      <Projects logout={logout} user={user} />
     </Route>
   </Switch>
 

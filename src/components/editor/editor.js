@@ -14,6 +14,10 @@ import {
 import { listen } from "vscode-ws-jsonrpc";
 import normalizeUrl from "normalize-url";
 import ReconnectingWebSocket from "reconnecting-websocket";
+import WebSocketConnection from "../../utils/ws";
+import { Button, Card, Typography, Popconfirm } from "antd";
+import {DeleteOutlined, ApiOutlined} from  '@ant-design/icons';
+import request from "../../utils/request";
 
 function createLanguageClient(connection) {
   return new MonacoLanguageClient({
@@ -52,91 +56,148 @@ function createWebSocket(url) {
     minReconnectionDelay: 1000,
     reconnectionDelayGrowFactor: 1.3,
     connectionTimeout: 10000,
-    maxRetries: Infinity,
+    maxRetries: 5,
     debug: false,
   };
   return new ReconnectingWebSocket(url, undefined, socketOptions);
 }
 
-export default ({ initialText, ...props }) => {
-  let localRef = useRef(null);
-  const [value, setValue] = useState(initialText);
+function createDependencyProposals(range, data) {
+  // returning a static list of proposals, not even looking at the prefix (filtering is done by the Monaco editor),
+  // here you could do a server side lookup
+  return data.map((p) => {
+    return { label: `import ${p.name}`, insertText: `import ${p.name}`, range };
+  });
+}
+
+let INIT = true
+
+export default ({ Module, set_project, ...props }) => {
+  const [Result, SetResult] = React.useState(null);
 
   const monaco = useMonaco();
-
-  function createDependencyProposals(range) {
-    // returning a static list of proposals, not even looking at the prefix (filtering is done by the Monaco editor),
-    // here you could do a server side lookup
-    console.log("tuta");
-    return [
-      {
-        label: "import django",
-        insertText: "enum ",
-        range,
-      },
-      {
-        label: "import restfraemwork",
-        insertText: "LALA",
-        range,
-      },
-      {
-        label: "import aiohttp",
-        insertText: "String",
-        range,
-      },
-      {
-        label: "import asyncio",
-        insertText: "Da",
-        range,
-      },
-    ];
-  }
+  const ws = new WebSocketConnection();
 
   const handleEditorMounted = (editor, m) => {
     loader.init().then((monacoInstance) => {
-      monacoInstance.languages.registerCompletionItemProvider("python", {
-        provideCompletionItems: function (model, position) {
-          var word = model.getWordUntilPosition(position);
-          var range = {
-            startLineNumber: position.lineNumber,
-            endLineNumber: position.lineNumber,
-            startColumn: word.startColumn,
-            endColumn: word.endColumn,
-          };
-          return {
-            suggestions: createDependencyProposals(range),
-          };
-        },
+      //NEW API FOR Proposal
+      if (!INIT){
+          return
+      }
+      request({ url: "api/dashboard/package", method: "get" }, (res) => {
+        monacoInstance.languages.registerCompletionItemProvider("python", {
+          provideCompletionItems: function (model, position) {
+            var word = model.getWordUntilPosition(position);
+            var range = {
+              startLineNumber: position.lineNumber,
+              endLineNumber: position.lineNumber,
+              startColumn: word.startColumn,
+              endColumn: word.endColumn,
+            };
+            INIT = false
+            return {
+              suggestions: createDependencyProposals(range, res.data),
+            };
+          },
+        });
       });
     });
   };
 
   useEffect(() => {
     if (monaco) {
-      console.log("here is the monaco instance:", monaco);
       MonacoServices.install(monaco.editor);
       const url = createUrl("/sampleSer ver");
       const webSocket = createWebSocket(url);
+      ws.connect(`ws/dashboard/module/${Module.id}/`);
       listen({
         webSocket,
         onConnection: (connection) => {
           // create and start the language client
           const languageClient = createLanguageClient(connection);
           const disposable = languageClient.start();
-          connection.onClose(() => disposable.dispose());
+          connection.onClose(() => {
+            disposable.dispose();
+            console.log("CLOSE!!");
+          });
         },
       });
-      // return () => monaco.editor.dispose();
+      return () => {
+        webSocket.close();
+        ws.close();
+      };
     }
   }, [monaco]);
 
+
+  function SendToServer(value, event) {
+    ws.send(JSON.stringify({ code: value }));
+  }
+
+  function RunModule() {
+    request(
+      { url: `api/dashboard/module/${Module.id}/run/`, method: "post" },
+      (res) => {
+        console.log(res.data);
+        SetResult(res.data);
+      },
+      (err) => {}
+    );
+  }
+
+  function DeleteModule(){
+    request({'method': 'delete', url:  `api/dashboard/module/${Module.id}`},
+    (res)=>{
+      set_project(null)
+    },
+    (err)=>{
+
+    })
+  }
+
   return (
-    <Editor
-      height="800px"
-      width="800px"
-      value={initialText}
-      language="python"
-      onMount={handleEditorMounted}
-    />
+    <div>
+      <div style={{ display: "flex", background: "white"}}>
+        <Button icon={<ApiOutlined />} type="primary" danger onClick={RunModule}>
+          Run
+        </Button>
+
+        <Popconfirm
+    title="Are you sure to delete this module?"
+    onConfirm={DeleteModule}
+    okText="Yes"
+    cancelText="No"
+  >
+            <Button icon={<DeleteOutlined />} type="primary" style={{marginLeft: '1%'}} ghost>
+          Delete
+        </Button>
+    </Popconfirm>
+        <Typography.Paragraph
+          copyable
+          style={{ marginLeft: "5%", marginTop: "1%" }}
+        >
+          {Module.url}
+        </Typography.Paragraph>
+      </div>
+      <div style={{ display: "flex"}}>
+        <Editor
+          height="35vmax"
+          width="50vmax"
+          value={Module.code}
+          language="python"
+          onMount={handleEditorMounted}
+          onChange={SendToServer}
+        />
+        {Result != null ? (
+          <Card title="Output" bordered={true} style={{ width: 300 }}>
+            <p>Output:{Result.stdout}</p>
+            <p style={{ color: "red" }}>Errors:{Result.stderr}</p>
+            <p>Exit code: {Result.exit_code}</p>
+          </Card>
+        ) : (
+          ""
+        )}
+      </div>
+    </div>
   );
 };
